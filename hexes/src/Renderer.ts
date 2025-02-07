@@ -73,7 +73,7 @@ export class Renderer {
       return;
     }
     const startTime = performance.now();
-    const endTime = startTime + 1000;
+    const endTime = startTime + 600;
     this.animation = {
       startTime,
       endTime,
