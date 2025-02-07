@@ -22,6 +22,9 @@
         stroke-width: 2px;
         cursor: pointer;
       }
+      .marker {
+        fill: red;
+      }
       .highlight {
         fill: yellow;
       }
@@ -41,6 +44,86 @@
     <button id="confirm">Confirm Placement</button>
 
     <script>
+      class RectPoint {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+
+        scale(s) {
+          return new RectPoint(this.x * s, this.y * s);
+        }
+      }
+
+      class HexPoint {
+        constructor(q, r) {
+          this.q = q;
+          this.r = r;
+        }
+
+        toRectPoint() {
+          let x = 1.5 * this.q;
+          let y = Math.sqrt(3) * (0.5 * this.q + this.r);
+          return new RectPoint(x, y);
+        }
+
+        toKey() {
+          return `${this.q},${this.r}`;
+        }
+      }
+
+      class Hex {
+        constructor(hexPoint, rotation = 0, connectableEdges = []) {
+          this.hexPoint = hexPoint;
+          this.rotation = rotation;
+          this.connectableEdges = connectableEdges;
+        }
+      }
+
+      function makeHexElement(hex, isCurrent = false, isValidMove = false) {
+        const rectPoint = hex.hexPoint.toRectPoint().scale(HEX_SIZE);
+        const { x, y } = { x: rectPoint.x, y: rectPoint.y };
+        const points = [];
+        for (let i = 0; i < 6; i++) {
+          let angle = (Math.PI / 3) * i;
+          let px = x + HEX_SIZE * Math.cos(angle);
+          let py = y + HEX_SIZE * Math.sin(angle);
+          points.push(`${px},${py}`);
+        }
+        const hexElement = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "polygon"
+        );
+        const groupElement = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g"
+        );
+
+        hexElement.setAttribute("points", points.join(" "));
+        hexElement.classList.add("hex");
+        if (isCurrent) hexElement.classList.add("highlight");
+        if (isValidMove) hexElement.classList.add("valid-move");
+
+        groupElement.appendChild(hexElement);
+
+        for (const connectableEdge of hex.connectableEdges) {
+          const markerElement = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          );
+          const angle = Math.PI / 6 + (connectableEdge * Math.PI) / 3;
+          const cx = x + 0.7 * HEX_SIZE * Math.cos(angle);
+          const cy = y + 0.7 * HEX_SIZE * Math.sin(angle);
+          markerElement.setAttribute("r", HEX_SIZE / 10);
+          markerElement.setAttribute("cx", cx);
+          markerElement.setAttribute("cy", cy);
+          markerElement.classList.add("marker");
+          groupElement.appendChild(markerElement);
+        }
+
+        return groupElement;
+      }
+
       const svg = document.getElementById("hexGrid");
       const confirmButton = document.getElementById("confirm");
       const HEX_SIZE = 40; // Distance from the center to a corner.
@@ -79,7 +162,9 @@
       }
 
       function generateFirstHex() {
-        let hex = drawHex(0, 0);
+        const hex = new Hex(new HexPoint(0, 0), 0, [0, 1, 2, 3, 4, 5]);
+        const firstHexElement = makeHexElement(hex);
+        svg.appendChild(firstHexElement);
         placedHexes.set("0,0", hex);
         generateNewHex();
       }
@@ -100,11 +185,20 @@
 
         possiblePositions.forEach((pos) => {
           if (!placedHexes.has(`${pos.q},${pos.r}`)) {
-            drawHex(pos.q, pos.r, false, true);
+            const hexElement = makeHexElement(
+              new Hex(new HexPoint(pos.q, pos.r)),
+              false,
+              true
+            );
+            svg.appendChild(hexElement);
           }
         });
 
-        currentHex = drawHex(newQ, newR, true);
+        currentHex = makeHexElement(
+          new Hex(new HexPoint(newQ, newR), 0, [1, 3]),
+          true
+        );
+        svg.appendChild(currentHex);
       }
 
       confirmButton.addEventListener("click", () => {
