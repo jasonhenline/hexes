@@ -14,8 +14,10 @@ export function runGame(svgElement: SVGElement): void {
   const placedHexTiles: PositionedHexTile[] = [
     new PositionedHexTile(
       startingHexTile,
-      new AxialHexVector(0, 0),
-      0,
+      {
+        location: new AxialHexVector(0, 0),
+        rotation: 0,
+      },
       renderedStartingHexTile
     ),
   ];
@@ -28,8 +30,9 @@ export function runGame(svgElement: SVGElement): void {
   for (const placedHexTile of placedHexTiles) {
     for (const baselineEdgeIndex of placedHexTile.hexTile
       .connectableEdgeIndexes) {
-      const edgeIndex = (baselineEdgeIndex + placedHexTile.rotation) % 6;
-      const neighborPosition = placedHexTile.position.add(
+      const edgeIndex =
+        (baselineEdgeIndex + placedHexTile.position.rotation) % 6;
+      const neighborPosition = placedHexTile.position.location.add(
         CARDINAL_DIRECTIONS[edgeIndex]
       );
       const neighborPositionKey = neighborPosition.toString();
@@ -42,8 +45,7 @@ export function runGame(svgElement: SVGElement): void {
         renderedAllowedPositionHexTile.classList.add("allowed-position");
         const allowedPositionTile = new PositionedHexTile(
           allowedPositionHexTile,
-          neighborPosition,
-          0,
+          { location: neighborPosition, rotation: 0 },
           renderedAllowedPositionHexTile
         );
         renderer.setTransformAttribute(allowedPositionTile);
@@ -54,11 +56,11 @@ export function runGame(svgElement: SVGElement): void {
           if (currentTile === undefined) {
             return;
           }
-          renderer.animateToNewPosition(
-            currentTile,
-            allowedPositionTile.position,
-            Math.floor(Math.random() * 6)
-          );
+          const newPosition = {
+            location: allowedPositionTile.position.location,
+            rotation: Math.floor(Math.random() * 6),
+          };
+          renderer.animateToPosition(currentTile, newPosition);
         });
       }
     }
@@ -70,8 +72,10 @@ export function runGame(svgElement: SVGElement): void {
   currentElement.classList.add("current");
   currentTile = new PositionedHexTile(
     currentHexTile,
-    allowedPositionTiles[0].position,
-    0,
+    {
+      location: allowedPositionTiles[0].position.location,
+      rotation: 0,
+    },
     currentElement
   );
   renderer.setTransformAttribute(currentTile);

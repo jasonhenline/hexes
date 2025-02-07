@@ -1,5 +1,6 @@
-import { AxialHexVector } from "./AxialHexCoordinate";
+import { Animation } from "./Animation";
 import { HexTile } from "./HexTile";
+import { Position } from "./Position";
 import { PositionedHexTile } from "./PositionedHexTile";
 
 export class Renderer {
@@ -49,57 +50,83 @@ export class Renderer {
     return groupElement;
   }
 
-  public getTransformString(
-    tile: PositionedHexTile,
-    withPx: boolean = false
-  ): string {
-    const rotation = tile.rotation * 60;
-    const cartesianPosition = tile.position.toCartesian();
+  public getTransformString(position: Position): string {
+    const rotationDegrees = position.rotation * 60;
+    const cartesianPosition = position.location.toCartesian();
     const x = cartesianPosition.x * this.hexSize;
     const y = cartesianPosition.y * this.hexSize;
-    const px = withPx ? "px" : "";
-
-    return `translate(${x}${px}, ${y}${px})`;
+    return `translate(${x}, ${y}) rotate(${rotationDegrees})`;
   }
 
   public setTransformAttribute(tile: PositionedHexTile): void {
-    tile.svgGElement.setAttribute("transform", this.getTransformString(tile));
+    tile.svgGElement.setAttribute(
+      "transform",
+      this.getTransformString(tile.position)
+    );
   }
 
-  public animateToNewPosition(
+  public animateToPosition(
     tile: PositionedHexTile,
-    newPosition: AxialHexVector,
-    newRotation: number
+    newPosition: Position
   ): void {
-    const oldTransform = this.getTransformString(tile, true);
+    if (this.animation !== undefined) {
+      return;
+    }
+    const startTime = performance.now();
+    const endTime = startTime + 1000;
+    this.animation = {
+      startTime,
+      endTime,
+      startPosition: tile.position,
+      endPosition: newPosition,
+      svgGElement: tile.svgGElement,
+    };
+
     tile.position = newPosition;
-    tile.rotation = newRotation;
-    const newTransform = this.getTransformString(tile, true);
-    tile.svgGElement.animate(
-      [{ transform: oldTransform }, { transform: newTransform }],
-      {
-        duration: 500,
-        easing: "ease-out",
-        fill: "forwards",
-      }
-    );
+
+    requestAnimationFrame(() => this.updateAnimation());
   }
 
-  public animateToNewTransformAttribute(tile: PositionedHexTile): void {
-    const oldTransform =
-      tile.svgGElement.getAttribute("transform") || "translate(0, 0)";
-    const newTransform = this.getTransformString(tile, true);
+  private updateAnimation(): void {
+    if (this.animation === undefined) {
+      return;
+    }
+    const now = performance.now();
+    if (now >= this.animation.endTime) {
+      this.animation.svgGElement.setAttribute(
+        "transform",
+        this.getTransformString(this.animation.endPosition)
+      );
+      this.animation = undefined;
+      return;
+    }
+    const duration = this.animation.endTime - this.animation.startTime;
+    const progress = (now - this.animation.startTime) / duration;
 
-    console.log("Old Transform:", oldTransform);
-    console.log("New Transform:", newTransform);
+    const rotation =
+      this.animation.startPosition.rotation +
+      progress *
+        (this.animation.endPosition.rotation -
+          this.animation.startPosition.rotation);
 
-    tile.svgGElement.animate(
-      [{ transform: oldTransform }, { transform: newTransform }],
-      {
-        duration: 500,
-        easing: "ease-out",
-        fill: "forwards",
-      }
+    const endCartesian = this.animation.endPosition.location.toCartesian();
+    const startCartesian = this.animation.startPosition.location.toCartesian();
+    const x = startCartesian.x + progress * (endCartesian.x - startCartesian.x);
+    const y = startCartesian.y + progress * (endCartesian.y - startCartesian.y);
+    const scaledX = x * this.hexSize;
+    const scaledY = y * this.hexSize;
+
+    const scale = 1 + 0.2 * Math.sin(progress * Math.PI);
+
+    this.animation.svgGElement.setAttribute(
+      "transform",
+      `translate(${scaledX}, ${scaledY}) rotate(${
+        rotation * 60
+      }) scale(${scale})`
     );
+
+    requestAnimationFrame(() => this.updateAnimation());
   }
+
+  private animation: Animation | undefined;
 }
