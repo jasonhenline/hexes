@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hex Tile Game</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+      }
+      svg {
+        background-color: white;
+      }
+      .hex {
+        fill: lightblue;
+        stroke: black;
+        stroke-width: 2px;
+        cursor: pointer;
+      }
+      .highlight {
+        fill: yellow;
+      }
+      .valid-move {
+        fill: lightgreen;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Hex Tile Game</h1>
+    <svg
+      id="hexGrid"
+      width="800"
+      height="600"
+      viewBox="-400 -300 800 600"
+    ></svg>
+    <button id="confirm">Confirm Placement</button>
+
+    <script>
+      const svg = document.getElementById("hexGrid");
+      const confirmButton = document.getElementById("confirm");
+      const HEX_SIZE = 40; // Distance from the center to a corner.
+
+      let placedHexes = new Map();
+      let currentHex = null;
+      let possiblePositions = [];
+
+      function hexToPixel(q, r) {
+        let x = HEX_SIZE * 1.5 * q;
+        let y = HEX_SIZE * Math.sqrt(3) * (0.5 * q + r);
+        return { x, y };
+      }
+
+      function drawHex(q, r, isCurrent = false, isValidMove = false) {
+        let { x, y } = hexToPixel(q, r);
+        let points = [];
+        for (let i = 0; i < 6; i++) {
+          let angle = (Math.PI / 3) * i;
+          let px = x + HEX_SIZE * Math.cos(angle);
+          let py = y + HEX_SIZE * Math.sin(angle);
+          points.push(`${px},${py}`);
+        }
+
+        let hex = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "polygon"
+        );
+        hex.setAttribute("points", points.join(" "));
+        hex.classList.add("hex");
+        if (isCurrent) hex.classList.add("highlight");
+        if (isValidMove) hex.classList.add("valid-move");
+
+        svg.appendChild(hex);
+        return { element: hex, q, r };
+      }
+
+      function generateFirstHex() {
+        let hex = drawHex(0, 0);
+        placedHexes.set("0,0", hex);
+        generateNewHex();
+      }
+
+      function generateNewHex() {
+        let newQ = 1;
+        let newR = 0;
+
+        // Find valid positions
+        possiblePositions = [
+          { q: -1, r: 0 },
+          { q: 1, r: 0 },
+          { q: 0, r: 1 },
+          { q: 0, r: -1 },
+          { q: -1, r: 1 },
+          { q: 1, r: -1 },
+        ];
+
+        possiblePositions.forEach((pos) => {
+          if (!placedHexes.has(`${pos.q},${pos.r}`)) {
+            drawHex(pos.q, pos.r, false, true);
+          }
+        });
+
+        currentHex = drawHex(newQ, newR, true);
+      }
+
+      confirmButton.addEventListener("click", () => {
+        if (currentHex) {
+          placedHexes.set(`${currentHex.q},${currentHex.r}`, currentHex);
+          document.querySelectorAll(".valid-move").forEach((e) => e.remove());
+          document.querySelector(".highlight").classList.remove("highlight");
+          generateNewHex();
+        }
+      });
+
+      generateFirstHex();
+    </script>
+  </body>
+</html>
