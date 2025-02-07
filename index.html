@@ -44,6 +44,9 @@
     <button id="confirm">Confirm Placement</button>
 
     <script>
+      /**
+       * Rectangular coordinates of a point.
+       */
       class RectPoint {
         constructor(x, y) {
           this.x = x;
@@ -55,6 +58,9 @@
         }
       }
 
+      /**
+       * Axial coordinates of a point in a hex grid.
+       */
       class HexPoint {
         constructor(q, r) {
           this.q = q;
@@ -111,7 +117,8 @@
             "http://www.w3.org/2000/svg",
             "circle"
           );
-          const angle = Math.PI / 6 + (connectableEdge * Math.PI) / 3;
+          const angle =
+            Math.PI / 6 + ((connectableEdge + hex.rotation) * Math.PI) / 3;
           const cx = x + 0.7 * HEX_SIZE * Math.cos(angle);
           const cy = y + 0.7 * HEX_SIZE * Math.sin(angle);
           markerElement.setAttribute("r", HEX_SIZE / 10);
