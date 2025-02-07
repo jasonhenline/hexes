@@ -44,6 +44,16 @@
     <button id="confirm">Confirm Placement</button>
 
     <script>
+      // Ordered pairs (dq, dr) for directions in axial hex coordinates.
+      const ORDERED_DIRECTIONS = [
+        [1, 0], // Southeast
+        [0, 1], // South
+        [-1, 1], // Southwest
+        [-1, 0], // Northwest
+        [0, -1], // North
+        [1, -1], // Northeast
+      ];
+
       /**
        * Rectangular coordinates of a point.
        */
@@ -76,6 +86,17 @@
         toKey() {
           return `${this.q},${this.r}`;
         }
+
+        getNeighbors() {
+          ORDERED_DIRECTIONS.map(([dq, dr]) => {
+            return new HexPoint(this.q + dq, this.r + dr);
+          });
+        }
+      }
+
+      function hexPointFromKey(key) {
+        const [q, r] = key.split(",").map(Number);
+        return new HexPoint(q, r);
       }
 
       class Hex {
@@ -83,6 +104,20 @@
           this.hexPoint = hexPoint;
           this.rotation = rotation;
           this.connectableEdges = connectableEdges;
+        }
+
+        hasConnectableEdge(directionIndex) {
+          return this.connectableEdges.includes(
+            (directionIndex - this.rotation) % 6
+          );
+        }
+
+        getConnectableNeighborHexPoints() {
+          return this.connectableEdges.map((edge) => {
+            const rotatedEdge = (edge + this.rotation) % 6;
+            const [dq, dr] = ORDERED_DIRECTIONS[rotatedEdge];
+            return new HexPoint(this.hexPoint.q + dq, this.hexPoint.r + dr);
+          });
         }
       }
 
@@ -139,37 +174,8 @@
       let currentHex = null;
       let possiblePositions = [];
 
-      function hexToPixel(q, r) {
-        let x = HEX_SIZE * 1.5 * q;
-        let y = HEX_SIZE * Math.sqrt(3) * (0.5 * q + r);
-        return { x, y };
-      }
-
-      function drawHex(q, r, isCurrent = false, isValidMove = false) {
-        let { x, y } = hexToPixel(q, r);
-        let points = [];
-        for (let i = 0; i < 6; i++) {
-          let angle = (Math.PI / 3) * i;
-          let px = x + HEX_SIZE * Math.cos(angle);
-          let py = y + HEX_SIZE * Math.sin(angle);
-          points.push(`${px},${py}`);
-        }
-
-        let hex = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "polygon"
-        );
-        hex.setAttribute("points", points.join(" "));
-        hex.classList.add("hex");
-        if (isCurrent) hex.classList.add("highlight");
-        if (isValidMove) hex.classList.add("valid-move");
-
-        svg.appendChild(hex);
-        return { element: hex, q, r };
-      }
-
       function generateFirstHex() {
-        const hex = new Hex(new HexPoint(0, 0), 0, [0, 1, 2, 3, 4, 5]);
+        const hex = new Hex(new HexPoint(0, 0), 0, [0, 1, 2, 3, 4]);
         const firstHexElement = makeHexElement(hex);
         svg.appendChild(firstHexElement);
         placedHexes.set("0,0", hex);
@@ -177,34 +183,35 @@
       }
 
       function generateNewHex() {
-        let newQ = 1;
-        let newR = 0;
+        const allValidHexPointKeys = new Set();
+        for (const placedHex of placedHexes.values()) {
+          const connectableNeighborHexPoints =
+            placedHex.getConnectableNeighborHexPoints();
+          for (const hexPoint of connectableNeighborHexPoints) {
+            allValidHexPointKeys.add(hexPoint.toKey());
+          }
+        }
 
-        // Find valid positions
-        possiblePositions = [
-          { q: -1, r: 0 },
-          { q: 1, r: 0 },
-          { q: 0, r: 1 },
-          { q: 0, r: -1 },
-          { q: -1, r: 1 },
-          { q: 1, r: -1 },
-        ];
+        if (allValidHexPointKeys.size === 0) {
+          alert("Game over!");
+          return;
+        }
 
-        possiblePositions.forEach((pos) => {
-          if (!placedHexes.has(`${pos.q},${pos.r}`)) {
-            const hexElement = makeHexElement(
-              new Hex(new HexPoint(pos.q, pos.r)),
-              false,
-              true
-            );
+        let currentHexPoint = null;
+
+        for (const key of allValidHexPointKeys) {
+          const hexPoint = hexPointFromKey(key);
+          if (currentHexPoint === null) {
+            currentHexPoint = hexPoint;
+          }
+          if (!placedHexes.has(key)) {
+            const hex = new Hex(hexPoint);
+            const hexElement = makeHexElement(hex, false, true);
             svg.appendChild(hexElement);
           }
-        });
+        }
 
-        currentHex = makeHexElement(
-          new Hex(new HexPoint(newQ, newR), 0, [1, 3]),
-          true
-        );
+        currentHex = makeHexElement(new Hex(currentHexPoint, 0, [1, 3]), true);
         svg.appendChild(currentHex);
       }
 
