@@ -13,6 +13,45 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+body {
+  background-color: gray;
+}
+
+#main-svg {
+  background-color: white;
+}
+
+.placed polygon {
+  fill: orange;
+}
+
+.allowed-position polygon {
+  fill: lightgreen;
+}
+
+.allowed-position polygon:hover {
+  fill: green;
+}
+
+.current polygon {
+  fill: lightblue;
+}
+
+.current polygon:hover {
+  fill: blue;
+}
+
+.marker {
+  fill: red;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
