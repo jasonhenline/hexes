@@ -75,7 +75,7 @@ export function runGame(
   let allowedPositionTiles = createAllowedPositionTiles();
 
   // Add the current tile.
-  const currentHexTile = new HexTile([0, 2]);
+  const currentHexTile = createRandomHexTile();
   const currentElement = renderer.createElementForHexTile(currentHexTile);
   currentElement.classList.add("current");
   currentTile = new PositionedHexTile(
@@ -101,7 +101,7 @@ export function runGame(
     });
     allowedPositionTiles = createAllowedPositionTiles();
 
-    const currentHexTile = new HexTile([0, 2]);
+    const currentHexTile = createRandomHexTile();
     const currentElement = renderer.createElementForHexTile(currentHexTile);
     currentElement.classList.add("current");
     currentTile = new PositionedHexTile(
@@ -115,4 +115,14 @@ export function runGame(
     renderer.setTransformAttribute(currentTile);
     svgElement.appendChild(currentElement);
   });
+}
+
+function createRandomHexTile(): HexTile {
+  const edges = [0];
+  for (let i = 1; i < 6; i++) {
+    if (Math.random() < 0.5) {
+      edges.push(i);
+    }
+  }
+  return new HexTile(edges);
 }
