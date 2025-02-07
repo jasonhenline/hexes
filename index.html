@@ -88,7 +88,7 @@
         }
 
         getNeighbors() {
-          ORDERED_DIRECTIONS.map(([dq, dr]) => {
+          return ORDERED_DIRECTIONS.map(([dq, dr]) => {
             return new HexPoint(this.q + dq, this.r + dr);
           });
         }
@@ -208,6 +208,46 @@
             const hex = new Hex(hexPoint);
             const hexElement = makeHexElement(hex, false, true);
             svg.appendChild(hexElement);
+            hexElement.addEventListener("click", () => {
+              // TODO: Can we keep the old element around and just change its
+              // position and rotation so that we get a CSS animation?
+              if (currentHex !== null && currentHex.parentNode) {
+                currentHex.parentNode.removeChild(currentHex);
+              }
+              let rotation = 0;
+              for (const neighbor of hexPoint.getNeighbors()) {
+                const placedNeighbor = placedHexes.get(neighbor.toKey());
+                if (placedHexes.has(neighbor.toKey())) {
+                  const [dq, dr] = [
+                    hexPoint.q - neighbor.q,
+                    hexPoint.r - neighbor.r,
+                  ];
+                  let direction = -1;
+                  for (let i = 0; i < 6; i++) {
+                    if (
+                      ORDERED_DIRECTIONS[i][0] === dq &&
+                      ORDERED_DIRECTIONS[i][1] === dr
+                    ) {
+                      direction = i;
+                      break;
+                    }
+                  }
+                  if (direction === -1) {
+                    continue;
+                  }
+                  if (placedNeighbor.hasConnectableEdge(direction)) {
+                    rotation = (direction + 3 - 1) % 6; // The -1 is to hook to the first direction. We need to store the first direction of the current hex somewhere.
+                    break;
+                  }
+                }
+              }
+
+              currentHex = makeHexElement(
+                new Hex(hexPoint, rotation, [1, 3]),
+                true
+              );
+              svg.appendChild(currentHex);
+            });
           }
         }
 
