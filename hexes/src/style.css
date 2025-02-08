@@ -33,13 +33,11 @@ body {
 }
 
 .allowed-position polygon {
-  fill: lightyellow;
-  stroke: yellow;
-  stroke-width: 2;
+  fill: tan;
 }
 
 .allowed-position polygon:hover {
-  fill: yellow;
+  fill: lightgreen;
 }
 
 .current polygon {
