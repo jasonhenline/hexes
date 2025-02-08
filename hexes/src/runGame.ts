@@ -14,25 +14,52 @@ export function runGame(
   renderedStartingHexTile.classList.add("placed");
   svgElement.appendChild(renderedStartingHexTile);
 
-  const placedHexTiles: PositionedHexTile[] = [
-    new PositionedHexTile(
-      startingHexTile,
-      {
-        location: new AxialHexVector(0, 0),
-        rotation: 0,
-      },
-      renderedStartingHexTile
-    ),
-  ];
+  const keyToPlacedHexTile: Map<string, PositionedHexTile> = new Map([
+    [
+      new AxialHexVector(0, 0).toString(),
+      new PositionedHexTile(
+        startingHexTile,
+        {
+          location: new AxialHexVector(0, 0),
+          rotation: 0,
+        },
+        renderedStartingHexTile
+      ),
+    ],
+  ]);
 
   let currentTile: PositionedHexTile | undefined;
 
+  function getAllowedRotations(
+    location: AxialHexVector,
+    hexTile: HexTile
+  ): number[] {
+    const result: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      for (const baseEdge of hexTile.connectableEdgeIndexes) {
+        const edge = (baseEdge + i) % 6;
+        const reverseEdge = (edge + 3) % 6;
+        const neighborLocationKey = location
+          .add(CARDINAL_DIRECTIONS[edge])
+          .toString();
+        const neighborTile = keyToPlacedHexTile.get(neighborLocationKey);
+        if (neighborTile !== undefined) {
+          if (
+            neighborTile.hexTile.connectableEdgeIndexes.includes(reverseEdge)
+          ) {
+            result.push(i);
+            break;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   function createAllowedPositionTiles(): PositionedHexTile[] {
-    const occupiedKeySet: Set<string> = new Set(
-      placedHexTiles.map((tile) => tile.position.location.toString())
-    );
+    const occupiedKeySet: Set<string> = new Set(keyToPlacedHexTile.keys());
     const allowedPositionTiles: PositionedHexTile[] = [];
-    for (const placedHexTile of placedHexTiles) {
+    for (const placedHexTile of keyToPlacedHexTile.values()) {
       for (const baselineEdgeIndex of placedHexTile.hexTile
         .connectableEdgeIndexes) {
         const edgeIndex =
@@ -60,9 +87,13 @@ export function runGame(
             if (currentTile === undefined) {
               return;
             }
+            const newLocation = allowedPositionTile.position.location;
             const newPosition = {
-              location: allowedPositionTile.position.location,
-              rotation: Math.floor(Math.random() * 6),
+              location: newLocation,
+              rotation: getAllowedRotations(
+                newLocation,
+                currentTile.hexTile
+              )[0],
             };
             renderer.animateToPosition(currentTile, newPosition);
           });
@@ -78,11 +109,12 @@ export function runGame(
   const currentHexTile = createRandomHexTile();
   const currentElement = renderer.createElementForHexTile(currentHexTile);
   currentElement.classList.add("current");
+  const location = allowedPositionTiles[0].position.location;
   currentTile = new PositionedHexTile(
     currentHexTile,
     {
-      location: allowedPositionTiles[0].position.location,
-      rotation: 0,
+      location,
+      rotation: getAllowedRotations(location, currentHexTile)[0],
     },
     currentElement
   );
@@ -95,7 +127,10 @@ export function runGame(
     }
     currentTile.svgGElement.classList.remove("current");
     currentTile.svgGElement.classList.add("placed");
-    placedHexTiles.push(currentTile);
+    keyToPlacedHexTile.set(
+      currentTile.position.location.toString(),
+      currentTile
+    );
     allowedPositionTiles.forEach((tile) => {
       tile.svgGElement.remove();
     });
@@ -104,11 +139,12 @@ export function runGame(
     const currentHexTile = createRandomHexTile();
     const currentElement = renderer.createElementForHexTile(currentHexTile);
     currentElement.classList.add("current");
+    const location = allowedPositionTiles[0].position.location;
     currentTile = new PositionedHexTile(
       currentHexTile,
       {
-        location: allowedPositionTiles[0].position.location,
-        rotation: 0,
+        location,
+        rotation: getAllowedRotations(location, currentHexTile)[0],
       },
       currentElement
     );
