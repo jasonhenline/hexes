@@ -4,10 +4,7 @@ import { Position } from "./Position";
 import { PositionedHexTile } from "./PositionedHexTile";
 
 export class Renderer {
-  public constructor(
-    private readonly svgElement: SVGElement,
-    private readonly hexSize = 40
-  ) {
+  public constructor(svgElement: SVGElement, private readonly hexSize = 40) {
     svgElement.setAttribute("width", "800");
     svgElement.setAttribute("height", "600");
     svgElement.setAttribute("viewBox", "-400 -300 800 600");
