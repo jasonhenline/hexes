@@ -56,6 +56,49 @@ export function runGame(
     return result;
   }
 
+  function createNewCurrentTile(
+    allowedPositionTiles: PositionedHexTile[]
+  ): PositionedHexTile {
+    const hexTile = createRandomHexTile();
+    const element = renderer.createElementForHexTile(hexTile);
+    element.classList.add("current");
+    const location = allowedPositionTiles[0].position.location;
+    const positionedTile = new PositionedHexTile(
+      hexTile,
+      {
+        location,
+        rotation: getAllowedRotations(location, hexTile)[0],
+      },
+      element
+    );
+    renderer.setTransformAttribute(positionedTile);
+
+    element.addEventListener("click", () => {
+      const allowedRotations = getAllowedRotations(
+        positionedTile.position.location,
+        hexTile
+      );
+      if (allowedRotations.length === 0) {
+        return;
+      }
+      const currentRotationIndex = allowedRotations.indexOf(
+        positionedTile.position.rotation
+      );
+      const newRotationIndex =
+        (currentRotationIndex + 1) % allowedRotations.length;
+
+      const newPosition = {
+        location: positionedTile.position.location,
+        rotation: allowedRotations[newRotationIndex],
+      };
+
+      renderer.animateToPosition(positionedTile, newPosition);
+    });
+
+    svgElement.appendChild(element);
+    return positionedTile;
+  }
+
   function createAllowedPositionTiles(): PositionedHexTile[] {
     const occupiedKeySet: Set<string> = new Set(keyToPlacedHexTile.keys());
     const allowedPositionTiles: PositionedHexTile[] = [];
@@ -105,21 +148,7 @@ export function runGame(
 
   let allowedPositionTiles = createAllowedPositionTiles();
 
-  // Add the current tile.
-  const currentHexTile = createRandomHexTile();
-  const currentElement = renderer.createElementForHexTile(currentHexTile);
-  currentElement.classList.add("current");
-  const location = allowedPositionTiles[0].position.location;
-  currentTile = new PositionedHexTile(
-    currentHexTile,
-    {
-      location,
-      rotation: getAllowedRotations(location, currentHexTile)[0],
-    },
-    currentElement
-  );
-  renderer.setTransformAttribute(currentTile);
-  svgElement.appendChild(currentElement);
+  currentTile = createNewCurrentTile(allowedPositionTiles);
 
   placeHexButton.addEventListener("click", () => {
     if (currentTile === undefined) {
@@ -136,20 +165,7 @@ export function runGame(
     });
     allowedPositionTiles = createAllowedPositionTiles();
 
-    const currentHexTile = createRandomHexTile();
-    const currentElement = renderer.createElementForHexTile(currentHexTile);
-    currentElement.classList.add("current");
-    const location = allowedPositionTiles[0].position.location;
-    currentTile = new PositionedHexTile(
-      currentHexTile,
-      {
-        location,
-        rotation: getAllowedRotations(location, currentHexTile)[0],
-      },
-      currentElement
-    );
-    renderer.setTransformAttribute(currentTile);
-    svgElement.appendChild(currentElement);
+    currentTile = createNewCurrentTile(allowedPositionTiles);
   });
 }
 
