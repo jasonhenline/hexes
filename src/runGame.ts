@@ -44,8 +44,10 @@ export function runGame(
           .toString();
         const neighborTile = keyToPlacedHexTile.get(neighborLocationKey);
         if (neighborTile !== undefined) {
+          const neededEdge =
+            (reverseEdge - neighborTile.position.rotation + 6) % 6;
           if (
-            neighborTile.hexTile.connectableEdgeIndexes.includes(reverseEdge)
+            neighborTile.hexTile.connectableEdgeIndexes.includes(neededEdge)
           ) {
             result.push(i);
             break;
